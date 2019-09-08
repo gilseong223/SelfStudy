@@ -90,11 +90,11 @@ public class BinarySearchTree {
         }
     }
     
-    public void insertBST(char x){
+    public void insertBST(Object x){
         root = insertKey(root, x);
     }
     
-    public TreeNode searchBST(char x){
+    public TreeNode searchBST(Object x){
         TreeNode p = root;
         while(p!=null){
             if(x<p.data) p = p.left;
