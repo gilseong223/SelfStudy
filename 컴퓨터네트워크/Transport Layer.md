@@ -124,3 +124,51 @@ Timeout Interval = EstimatedRTT + "Safety margin"
  패킷 유실 상황을 타이머로 짐작할 수 있긴 하지만 좀 더 빠르게 알아낼 수 없을까. 어떤 상황을 목격하면 유실이라고 판단할 수 있을까. 
 
 window size가 1000이고 각 sequence #가 100, 200, 300, 400, 500, ... 돼있다. seq 200인 segment가 유실돼서 도착하지 못했다. 그런데 주는 쪽에서는 300을 줬다. 그러면 ack에 그대로 200을 준다. 또 400을 받으면 ack에 200을 준다. 이렇게 3번 같은 ack를 받으면 재전송한다. 정상적인 ack 200과 합쳐서 총 4개의 ack를 받으면 재전송 하는 것이다. 
+
+### 잠깐의 리뷰
+
+ Application Layer에서 tcp 소켓을 통해 내려오면 send buffer와 receive buffer가 생긴다. 우리가 tcp socket을 오픈하는 순간 os가 이러한 자료구조를 만든다. 데이터를 보내려고 할 때, 한 번에 모든 데이터를 보낼 수는 없고, window라는 크기만큼 보낼 수 있다. 보내는 쪽 send buffer의 sequence number는 받는 쪽의 receive buffer에서 관리한다.
+
+ buffer가 왜 필요할까. send buffer는 언제까지 보관할까. 상대방이 받았다고 확신할 때까지 보관한다. 상대방이 확실이 받았는지 보장하지 못하니까 buffer를 둬서 다시 보내기 위해 보관해둔다. receive buffer는 왜 필요할까. 데이터가 날라오는데 순서대로 온 건지 보장할 수 없다. 순서대로 들어오지 않은 애를 기다리기 위해 미리 들어온 애들이 기다린다.  Reliable Data Transfer라는 입장에서 Send buffer는 필수적이다. 상대가 못 받으면 다시 보내야 하니까. 그러나 Receive Buffer는 필수는 아니다. Cumulative Ack니까 못받은건 다시 요청하면 된다. 그래도 reliable은 유지된다. 
+
+![1569803674961](C:\Users\multicampus\AppData\Roaming\Typora\typora-user-images\1569803674961.png)
+
+![1569804137419](C:\Users\multicampus\AppData\Roaming\Typora\typora-user-images\1569804137419.png)
+
+### Flow Control
+
+ 상대방의 receive buffer가 얼마나 남았는지만 알면 된다. 상대의 버퍼에 공간이 없으면 보내는 것을 멈추고, 처리속도가 빨라서 계속 공간이 나면 더 빨리 보내주면 된다. 상대의 버퍼에 남아있는 공간만큼 보여주면 된다. 그 정보는 상대의 ack 정보 안에 있기 때문에 알기 쉽다.
+
+ 그렇기 때문에 윈도우 사이즈는 항상 고정된 값은 아니다. send buffer에서 window size는 받는 애의 receive buffer에서 남은 공간보다 작게 설정된다.
+
+ receive buffer에 남은 공간이 없어 ack에 receive window 0이라고 보내면, send buffer는 기다린다. 이러한 케이스를 대비해서 센더는 주기적으로 적은 데이터를 보낸다. ack를 받아내기 위해. 
+
+### Segment를 언제 보내야 할까
+
+ Segment의 최대 크기는 1460byte이다. 이것을 꽉 채워서 보내는게 좋을텐데 어떻게 하면 그럴 수 있을까. 알고리즘은 다음과 같다
+
+- 처음에 데이터가 들어오면 데이터 크기와 상관없이 일단 보낸다.
+- 두번째부터는
+  - ACK가 도착했을 경우, 쌓인 데이터를 보낸다.
+  - Segment 크기만큼 데이터가 쌓일 경우, 데이터를 보낸다.
+- 두번째를 계속 반복한다.
+
+### Receiver의 ReceiveWindow
+
+ 충분한 공간이 있을 때까지 계속 0으로 ack를 보낸다. 현재 receive buffer에 공간이 없다는 말은 receiver의 데이터 처리 속도가 느리다는 말이다. 적은 양의 데이터를 계속 받아봐야 어차피 시간이 오래 걸린다. 그리고 통신에 데이터보다 헤더가 더 큰 상황이 발생한다. 
+
+### Connection Management
+
+ 3-way handshake. 즉 세그먼트가 세 번 교환됨으로써 커넥션이 이루어진다. 2-way로 하면 왜 안될까.  클라이언트가 연결하자고 요청하면 서버가 대답하는 것이 2-way일 것인데, 서버의 대답이 도착한다는 보장이 없다. 
+
+#### 3-way handshake
+
+![three way handshake에 대한 이미지 검색결과](https://learningnetwork.cisco.com/resources/statics/1219267/av440f1_transport_p1_q2_poster.jpg)
+
+ 처음에 클라이언트가 SYN bit를 1로해서 보낸다. 서버가 tcp connection할 의향이 있으면 응답을 보낸다. SYNACK SYN bit이 1이면서 ACK를 보낸다. 그러면 다시 클라이언트는 받아서 ACK를 보낸다.
+
+#### termination
+
+![four way handshake에 대한 이미지 검색결과](https://t1.daumcdn.net/cfile/tistory/2336285058D7288E33)
+
+ 클라이언트가 더 이상 보낼 것이 없는 경우, FIN bit을 1로 보낸다. 서버는 ack를 보내고 난 후, 서버가 보내야 할 데이터 다 보낸 후에 FIN  bit을 1로 보낸다. 클라이언트도 여기에 대해서 ack를 보낸다. 클라이언트는 보내고 마지막 ack를 보낸 후 바로 끝나는 것이 아니라 아직 연결상태를 기다려야 한다. 마지막 FIN에 대한 ack가 유실될 경우를 대비해서. 
