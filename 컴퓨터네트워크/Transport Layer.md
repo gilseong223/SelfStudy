@@ -143,7 +143,7 @@ window size가 1000이고 각 sequence #가 100, 200, 300, 400, 500, ... 돼있�
 
  receive buffer에 남은 공간이 없어 ack에 receive window 0이라고 보내면, send buffer는 기다린다. 이러한 케이스를 대비해서 센더는 주기적으로 적은 데이터를 보낸다. ack를 받아내기 위해. 
 
-### Segment를 언제 보내야 할까
+### Nagle Algorithm : Segment를 언제 보내야 할까
 
  Segment의 최대 크기는 1460byte이다. 이것을 꽉 채워서 보내는게 좋을텐데 어떻게 하면 그럴 수 있을까. 알고리즘은 다음과 같다
 
