@@ -464,6 +464,142 @@ int main()
 }
 ```
 
+``` c
+#include <stdio.h>
+
+struct abc {
+	int a;
+	int b;
+	char c;
+};
+
+struct cba {
+	char a;
+	int c;
+	char b;
+};
+
+struct bca {
+	char a;
+	char b;
+	int c;
+};
+
+int main(void) {
+	// your code goes here
+	printf("%d", sizeof(struct abc)); // 12
+    printf("%d\n", sizeof(struct cba)); // 12
+    printf("%d\n", sizeof(struct bca)); // 8
+    
+	printf("%d, %d, %d", offsetof(struct bca, a), offsetof(struct bca, c), offsetof(struct bca, b));
+	
+	return 0;
+}
+
+```
+
+![img](https://dojang.io/pluginfile.php/495/mod_page/content/25/unit51-1.png)
+
+### 형변환
+
+  자료형 뒤에 포인터를 나타내는 *를 붙여주고 괄호로 묶어줘야 한다.
+
+- (자료형 *)포인터
+
+ pointer to int 였던 변수를 pointer to char로 바꿀 경우, 역참조 시 4바이트가 아니라 1바이트를 가져온다. 저장된 메모리 주소는 같지만 자료형에 따라 역참조했을 때 값을 가져오는 크기가 결정된다. 크기가 작은 메모리 공간을 할당한 뒤 큰 자료형의 포인터로 역참조하면 의도치 않은 값을 가져올 수도 있다.
+
+``` c
+#include <stdio.h>
+#include <stdlib.h>    // malloc, free 함수가 선언된 헤더 파일
+
+int main()
+{
+    int *numPtr = malloc(sizeof(int));    // 4바이트만큼 메모리 할당
+    char *cPtr;
+
+    *numPtr = 0x12345678;
+
+    cPtr = (char *)numPtr;     // int 포인터 numPtr을 char 포인터로 변환. 메모리 주소만 저장됨
+
+    printf("0x%x\n", *cPtr);   // 0x78: 낮은 자릿수 1바이트를 가져오므로 0x78
+
+    free(numPtr);    // 동적 메모리 해제
+
+    return 0;
+}
+```
+
+![img](https://dojang.io/pluginfile.php/558/mod_page/content/26/unit58-2.png)
+
+![img](https://dojang.io/pluginfile.php/558/mod_page/content/26/unit58-3.png)
+
+ void 포인터는 자료형이 정해져 있지 않으므로 역참조 연산을 할 수 없다. 하지만 void 포인터를 다른 자료형으로 변환하면 역참조를 할 수 있다.
+
+``` c
+#include <stdio.h>
+
+int main()
+{
+    int num1 = 10;
+    float num2 = 3.5f;
+    char c1 = 'a';
+    void *ptr;
+
+    ptr = &num1;    // num1의 메모리 주소를 void 포인터 ptr에 저장
+    // printf("%d\n", *ptr);         // 컴파일 에러
+    printf("%d\n", *(int *)ptr);     // 10: void 포인터를 int 포인터로 변환한 뒤 역참조
+
+    ptr = &num2;    // num2의 메모리 주소를 void 포인터 ptr에 저장
+    // printf("%f\n", *ptr);         // 컴파일 에러
+    printf("%f\n", *(float *)ptr);   // 3.500000: void 포인터를 float 포인터로 변환한 뒤 역참조
+
+    ptr = &c1;      // c1의 메모리 주소를 void 포인터 ptr에 저장
+    // printf("%c\n", *ptr);         // 컴파일 에러
+    printf("%c\n", *(char *)ptr);    // a: void 포인터를 char 포인터로 변환한 뒤 역참조
+
+    return 0;
+}
+```
+
+ 자료형 변환은 구조체 포인터를 변환할 때 주로 쓰인다. 이 때는 struct와 구조체 이름 뒤에 *을 붙여주고 괄호로 묶어줘야 한다.
+
+- (struct 구조체이름 *) 포인터이름;
+- ((struct 구조체이름 *)포인터)->멤버
+
+![img](https://dojang.io/pluginfile.php/560/mod_page/content/24/unit58-4.png)
+
+typedef로 구조체 포인터의 별칭을 정할 수도 있다.
+
+``` c
+#include <stdio.h>
+#include <stdlib.h>    // malloc, free 함수가 선언된 헤더 파일
+
+typedef struct _Data {
+    char c1;
+    int num1;
+} Data, *PData;     // 구조체 별칭, 구조체 포인터 별칭 정의
+
+int main()
+{
+    PData d1 = malloc(sizeof(Data));    // 구조체 포인터 별칭으로 포인터 선언
+    void *ptr;   // void 포인터 선언
+
+    d1->c1 = 'a';
+    d1->num1 = 10;
+
+    ptr = d1;    // void 포인터에 d1 할당. 포인터 자료형이 달라도 컴파일 경고가 발생하지 않음.
+
+    printf("%c\n", ((Data *)ptr)->c1);     // 'a' : 구조체 별칭의 포인터로 변환
+    printf("%d\n", ((PData)ptr)->num1);    // 10  : 구조체 포인터 별칭으로 변환
+
+    free(d1);    // 동적 메모리 해제
+
+    return 0;
+}
+```
+
+### 함수
+
 
 
 ## Java
